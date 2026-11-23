@@ -78,9 +78,9 @@ def make_loop(root, kind='basic'):
             f.write(json.dumps({'type': 'result', 'result': 'Done.', 'total_cost_usd': 1.25, 'num_turns': 9}) + '\n')
         x("insert into issues values ('e1-0000', 'escalation', 'ESC1: Pick a license', 'Which license?', 'cycle2-curator-bbbb', "
           "'curator', 'operator', 'blocking', null, 'open', null, '2026-11-19T12:00:00Z', null, null, null)")
-        x("insert into issues values ('e2-0000', 'escalation', 'Schedule reblocking next', 'Planner, please.', null, "
+        x("insert into issues values ('e2-0000', 'escalation', 'Do the parser rewrite next', 'Planner, please.', null, "
           "'operator', 'planner', 'high', null, 'open', null, '2026-11-19T14:00:00Z', null, null, null)")
-        x("insert into issues values ('b1-0000', 'backlog', 'Make the encoders prettier', 'They are ugly.', null, "
+        x("insert into issues values ('b1-0000', 'backlog', 'Tidy the settings page', 'Labels are misaligned.', null, "
           "'operator', 'planner', 'low', null, 'open', null, '2026-11-19T13:00:00Z', null, null, null)")
         x("insert into issues values ('b2-0000', 'backlog', 'Old item', null, null, 'worker', 'planner', 'high', null, "
           "'resolved', null, '2026-11-18T13:00:00Z', null, '2026-11-19T08:00:00Z', 'Done in cycle 2.')")
@@ -104,7 +104,7 @@ def make_loop(root, kind='basic'):
         usage += [
             {'cycle': 11, 'role': 'worker', 'session': 'cycle11-worker1-k', 'harness': 'kiro-cli', 'credits': 35.5,
              'duration_ms': 1_800_000, 'recorded_at': '2026-11-21T09:00:00Z'},
-            {'cycle': 11, 'role': 'curator', 'session': 'cycle11-curator-k', 'harness': 'BASH_DEFAULT_TIMEOUT_MS=1800000',
+            {'cycle': 11, 'role': 'curator', 'session': 'cycle11-curator-k', 'harness': 'SOME_VAR=12345',
              'total_cost_usd': 0.58, 'duration_ms': 43_000, 'recorded_at': '2026-11-21T09:30:00Z'},
             {'cycle': 11, 'role': 'planner', 'session': 'cycle11-planner-k', 'harness': 'claude', 'total_cost_usd': 1.0,
              'recorded_at': '2026-11-21T08:04:00Z'},                         # no duration

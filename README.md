@@ -16,20 +16,20 @@ Or run it from a checkout without installing: `python3 -m mtv`.
 
 ## Run it
 
-    mtv ~/devel/myloop                       # read-only, http://127.0.0.1:8710/
-    mtv ~/devel/a ~/devel/b --open           # several loops, with a switcher
-    mtv --allow-actions ~/devel/myloop
+    mtv ~/loops/myloop                       # read-only, http://127.0.0.1:8710/
+    mtv ~/loops/a ~/loops/b --open           # several loops, with a switcher
+    mtv --allow-actions ~/loops/myloop
 
 Or put the loops in a settings file, `~/.config/mtv/config.json` (or `$MTV_CONFIG`, or `--config`):
 
 ```json
 {
   "loops": [
-    {"name": "bruckert", "root": "~/devel/bruckert-10km"},
-    {"name": "pdlang",   "root": "~/devel/pdlang-10km"}
+    {"name": "alpha", "root": "~/loops/alpha"},
+    {"name": "beta",  "root": "~/loops/beta"}
   ],
   "allow_actions": false,
-  "operator": "martin"
+  "operator": "alice"
 }
 ```
 

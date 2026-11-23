@@ -5,14 +5,14 @@ Command-line loop roots are added to the file's loops. Example:
 
     {
       "loops": [
-        {"name": "bruckert", "root": "~/devel/bruckert-10km"},
-        {"name": "pdlang",   "root": "~/devel/pdlang-10km"}
+        {"name": "alpha", "root": "~/loops/alpha"},
+        {"name": "beta",  "root": "~/loops/beta"}
       ],
       "tenkm": "~/10km",
       "host": "127.0.0.1",
       "port": 8710,
       "allow_actions": false,
-      "operator": "martin",
+      "operator": "alice",
       "token_env": "MTV_TOKEN"
     }
 

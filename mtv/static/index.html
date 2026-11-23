@@ -286,7 +286,7 @@ audit(id){const a=get('a:'+id,'/api/audit?id='+id);if(!a)return LOADING;if(a.err
 goals(){const d=get('docs','/api/docs');if(!d)return LOADING;return `<div class="crumb">central/loop</div><div class="g"><div class="c s6"><div class="md">${md(d.GOALS)}</div></div><div class="c s6"><div class="md">${md(d.PLAN)}</div></div><div class="c s12"><div class="md">${md(d.LEARNINGS)}</div></div></div>`},
 status(){return `<div class="crumb">10km status</div><h1>Status report</h1><button class="b" id="stbtn" onclick="refreshStatus()">refresh</button> <span class="mono dim" id="stat">${STATUS_AT?'as of '+hm(STATUS_AT):''}</span><pre class="rep" id="rep">running 10km status…</pre>`},
 launch(){return `<div class="crumb">LAUNCH SESSION</div><h1>Start an operator session</h1>
- <div style="max-width:620px"><label>USERNAME</label><input id="u" value="${esc(LS.get('mtv-user')||'klamart')}" oninput="lc()">
+ <div style="max-width:620px"><label>USERNAME</label><input id="u" value="${esc(LS.get('mtv-user')||'')}" placeholder="your username" oninput="lc()">
  <label>MODE</label><div class="seg"><button class="b on" id="m2" onclick="mode(2)">no agent</button></div>
  <label>FIRST MESSAGE (optional; makes it one-shot)</label><textarea id="msg" oninput="lc()" placeholder="e.g. Merge origin/main into the loop branch"></textarea>
  <div class="cmd" id="lcmd"></div><button class="b p" id="lb" onclick="doLaunch()">launch</button><button class="b" onclick="go('dash')">cancel</button>
