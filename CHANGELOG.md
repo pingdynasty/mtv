@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-11-23)
 
 First release as mtv (previously the 10km console).
 
@@ -13,3 +13,7 @@ First release as mtv (previously the 10km console).
   "tenkm" overrides the installation for all loops.
 - Token for non-local access, generated and printed at startup when $MTV_TOKEN isn't set; settings in JSON.
 - Charts with Apache ECharts, bundled for offline use (replaces Highcharts).
+- Sessions timeline with a range slider, worker lanes; per-hour axes with dates.
+- Loop controls stop, kill, start, resume and dispatch, each confirmed.
+- 'Needs you' counts only escalations assigned to the operator.
+- MIT licence; pip-installable with an `mtv` command.

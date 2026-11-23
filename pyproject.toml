@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mtv-10km"
+dynamic = ["version"]
+description = "mtv, the monkey televisor: a web console for 10km agent loops"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Martin Klang", email = "martin@rebeltech.org"}]
+requires-python = ">=3.9"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Environment :: Web Environment",
+  "Topic :: Software Development",
+]
+
+[project.urls]
+Homepage = "https://tenkm.org/"
+Source = "https://github.com/pingdynasty/mtv"
+"10km" = "https://github.com/pingdynasty/10km"
+
+[project.scripts]
+mtv = "mtv.cli:main"
+
+[tool.setuptools]
+packages = ["mtv"]
+
+[tool.setuptools.dynamic]
+version = {attr = "mtv.__version__"}
+
+[tool.setuptools.package-data]
+mtv = ["static/*.html", "static/vendor/*"]

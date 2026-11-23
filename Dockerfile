@@ -1,3 +1,6 @@
+# mtv image. Recommended use: run mtv inside the loop's own container or on the loop's host
+# (see README, "Where to run it"). As a separate container it is a different sandbox: keep it
+# read-only there.
 FROM python:3.12-slim
 RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
 # Run as the 10km image's user so SQLite can create the WAL -shm file on the shared volume.

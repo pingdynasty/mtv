@@ -3,15 +3,22 @@
 A web console for [10km](https://github.com/pingdynasty/10km) loops: escalations, the current
 cycle, sessions, repositories, history, cost and metrics, with a small set of operator actions.
 
-mtv watches loops whose files it can read: a local folder, or a volume shared with the loop's
-container. Requires Python 3.9+, standard library only. The page bundles its chart library 
-(Apache ECharts) and works offline.
+mtv watches loops whose files it can read: a local folder, or a folder bind-mounted into the
+loop's container. Python 3.9+, standard library only. The page bundles its chart library
+(Apache ECharts) and works offline. Demo: [tenkm.org](https://tenkm.org/).
+
+## Install
+
+    pip install git+https://github.com/pingdynasty/mtv     # or: python3 -m pip install .
+    mtv --help
+
+Or run it from a checkout without installing: `python3 -m mtv`.
 
 ## Run it
 
-    python3 -m mtv ~/devel/myloop                       # read-only, http://127.0.0.1:8710/
-    python3 -m mtv ~/devel/a ~/devel/b --open           # several loops, with a switcher
-    python3 -m mtv --allow-actions ~/devel/myloop
+    mtv ~/devel/myloop                       # read-only, http://127.0.0.1:8710/
+    mtv ~/devel/a ~/devel/b --open           # several loops, with a switcher
+    mtv --allow-actions ~/devel/myloop
 
 Or put the loops in a settings file, `~/.config/mtv/config.json` (or `$MTV_CONFIG`, or `--config`):
 
@@ -71,14 +78,13 @@ Because mtv runs the loop's own code, it belongs in the loop's sandbox:
   the loop already has. This is the recommended setup. Note that anything running as that user,
   including the loop's agents, can read mtv's environment (`/proc/<pid>/environ` on Linux), so
   treat `$MTV_TOKEN` as readable by the loop.
-- **Inside the loop's container** (`docker exec -d myloop python3 -m mtv … --host 0.0.0.0` with
-  the port published to `127.0.0.1`): the same, plus the container's limits.
-- **A sidecar container** sharing the volume is *not* the same sandbox. Commands mtv runs
-  execute in the sidecar: its image, user, network and mounts, and its open port. Database-only
-  actions (answer, resolve, backlog, stop, resume) work there. Actions that launch or signal
-  agents (start, dispatch, kill, operator sessions with an agent) would run agents in the
-  sidecar, or fail to reach the loop's processes, so don't enable actions in a sidecar unless it
-  is built to the same constraints as the loop container. Read-only use is fine.
+- **Inside the loop's container** (`docker exec -d myloop mtv /home/monkey/loop --host 0.0.0.0`,
+  with the port published to `127.0.0.1`): the same, plus the container's limits.
+- **On the host, for a container loop:** bind-mount the loop folder
+  (`-v ~/loops/myloop:/home/monkey/loop`) so mtv can read it, and keep actions off: commands
+  would run on the host, not in the container. Reading and acting through `docker exec`, with
+  no bind mount, is planned (see the roadmap).
+- **A separate sidecar container** is a different sandbox from the loop's. Keep it read-only.
 
 SQLite in WAL mode needs write access to `.10km/` even for reading (for its `-shm` file), so run
 mtv as the loop's user (uid 1000 in the 10km image) or group.
@@ -87,6 +93,12 @@ mtv as the loop's user (uid 1000 in the 10km image) or group.
 
     make test        # unit tests (standard library only)
     make smoke       # optional browser smoke test (needs: pip install playwright && playwright install chromium)
+
+## Roadmap
+
+- `10km mcp`: each loop serves its own state and operator actions over MCP; mtv becomes an MCP
+  client, local loops and container loops (`docker exec -i … 10km mcp`) alike.
+- Operator sessions with an agent, started from the page.
 
 The tests build synthetic loops (`tests/fixtures.py`): imported history, Kiro credits, malformed
 usage lines, sessions whose folder is missing, a loop that has never run.
@@ -101,4 +113,5 @@ Layout:
 
 ## License
 
-mtv: see LICENSE. Apache ECharts (`mtv/static/vendor/echarts.min.js`) is Apache-2.0.
+mtv is MIT licensed: see LICENSE. Apache ECharts (`mtv/static/vendor/echarts.min.js`) is
+Apache-2.0: see `mtv/static/vendor/ECHARTS-LICENSE` and `ECHARTS-NOTICE`.
