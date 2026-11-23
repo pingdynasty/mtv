@@ -267,10 +267,10 @@ class TestActions(Tmp):
 
 
 class TestServer(Tmp):
-    def start(self, token=None, allow=False, tenkm=''):
+    def start(self, token=None, allow=False, tenkm='', open_access=False):
         loops = [self.loop('basic'), self.loop('mixed'), Loop(os.path.join(self.tmp, 'gone'), 'gone', 'gone')]
         cfg = {'allow_actions': allow, 'operator': 'tester'}
-        self.app = App(cfg, loops, Runner(tenkm, os.path.join(self.tmp, 'state')), token)
+        self.app = App(cfg, loops, Runner(tenkm, os.path.join(self.tmp, 'state')), token, open_access)
         self.httpd = serve(self.app, '127.0.0.1', 0)
         self.port = self.httpd.server_address[1]
         threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
@@ -362,6 +362,24 @@ class TestServer(Tmp):
         self.assertIn('mtv_token=s3cret', h.get('Set-Cookie', ''))
         self.assertEqual(self.req('/api/loops', headers={'Cookie': 'mtv_token=s3cret'})[0], 200)
 
+
+    def test_open_access(self):
+        self.start(open_access=True)
+        self.assertTrue(self.app.open_access)
+        self.assertIsNone(self.app.token)
+        self.assertEqual(self.req('/api/loops')[0], 200)
+        self.assertNotIn('Set-Cookie', self.req('/?token=' + 'x')[1])
+
+    def test_no_token_not_local_refused(self):
+        self.start()
+        self.app.token = None
+        H = type(self.httpd.RequestHandlerClass.__name__, (self.httpd.RequestHandlerClass,), {})
+        h = H.__new__(H)
+        h.client_address = ('10.0.0.5', 1)
+        h.headers = {}
+        self.assertFalse(h.authed({}))         # no token and not local: refused
+        self.app.open_access = True
+        self.assertTrue(h.authed({}))          # --no-token: served
 
 if __name__ == '__main__':
     unittest.main()

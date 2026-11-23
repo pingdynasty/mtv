@@ -9,7 +9,8 @@
 
 Auth: requests from 127.0.0.1 need no token. Anything else needs
 "Authorization: Bearer <token>" (or ?token= for the first page load, which
-sets a cookie). With no token configured, only local requests are served.
+sets a cookie). With no token configured, only local requests are served,
+unless the app is started with open_access (mtv --no-token).
 """
 import hashlib
 import hmac
@@ -29,12 +30,13 @@ STATIC = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
 
 
 class App:
-    def __init__(self, cfg, loops, runner, token=None):
+    def __init__(self, cfg, loops, runner, token=None, open_access=False):
         self.cfg = cfg
         self.loops = {l.id: l for l in loops}
         self.order = [l.id for l in loops]
         self.runner = runner
         self.token = token or None
+        self.open_access = bool(open_access)
         self.allow = bool(cfg.get('allow_actions'))
         self.operator = cfg.get('operator') or ''
         self._live = {}
@@ -115,6 +117,8 @@ def make_handler(app):
             return self.client_address[0] in ('127.0.0.1', '::1', '::ffff:127.0.0.1')
 
         def authed(self, q):
+            if app.open_access:
+                return True
             if self.local() and not app.token:
                 return True
             if not app.token:

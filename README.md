@@ -52,10 +52,13 @@ both. `tenkm` must not be inside a loop; mtv refuses to start if it is.
 
 - mtv listens on 127.0.0.1 by default and serves requests from this machine without a token.
 - On any other address, requests need a token: `Authorization: Bearer …`, or open the page once
-  with `?token=…`, which sets a cookie. The token comes from `$MTV_TOKEN` (or `token_env`). If
-  none is set, mtv generates one at startup and prints it with a login link, so
-  `docker logs <container>` shows it. A generated token lasts for that run only; set
-  `$MTV_TOKEN` to keep the same one across restarts.
+  with `?token=<token>`, which sets a cookie.
+  - **`$MTV_TOKEN` set** (or the variable named by `token_env`): that token is used and never printed.
+  - **Not set:** mtv generates one for the run and prints it with a login link, so
+    `docker logs <container>` shows it. It changes on every restart.
+  - **`--no-token`:** no access control at all. Anyone who can reach the port can use mtv,
+    including its actions if they're enabled. Use it only behind a proxy or network that does its
+    own authentication.
 - Action requests from another origin are refused.
 - For HTTPS, put mtv behind a reverse proxy (for example Caddy or nginx).
 
@@ -71,7 +74,7 @@ docker run -d --name myloop-mtv -v myloop-home:/home/monkey:rw \
 docker logs myloop-mtv      # shows the token and a login link
 ```
 
-Pass `-e MTV_TOKEN=…` to use a fixed token instead.
+Pass `-e MTV_TOKEN=…` to use a fixed token instead; it is then not printed.
 
 SQLite in WAL mode needs write access to `.10km/` even for reading (for its `-shm` file), so run
 mtv with the loop's user ID (1000 in the 10km image) or group, and mount the volume read-write.

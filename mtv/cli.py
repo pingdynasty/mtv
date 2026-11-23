@@ -1,13 +1,16 @@
 """mtv command line.
 
     mtv [LOOP_ROOT ...] [--config PATH] [--host H] [--port N]
-        [--tenkm DIR] [--allow-actions] [--operator NAME] [--open]
+        [--tenkm DIR] [--allow-actions] [--operator NAME] [--no-token] [--open]
 
 Loop roots given here are added to those in the settings file.
 The token for non-local access comes from the environment variable named by
-"token_env" (default MTV_TOKEN); it is never read from a loop's files. When
-mtv listens on a non-local address and no token is set, it generates one for
-this run and prints a login link, so `docker logs` shows it.
+"token_env" (default MTV_TOKEN); it is never read from a loop's files, and a
+token from the environment is never printed. When mtv listens on a non-local
+address and no token is set, it generates one for this run and prints a login
+link, so `docker logs` shows it. --no-token turns access control off: anyone
+who can reach the port can use mtv (for example behind a proxy that does its
+own authentication).
 """
 import argparse
 import os
@@ -30,6 +33,8 @@ def main(argv=None):
     ap.add_argument('--tenkm', help='10km checkout to run 10km and msm from')
     ap.add_argument('--allow-actions', action='store_true', default=None, help='enable buttons that change a loop')
     ap.add_argument('--operator', help='name recorded with actions')
+    ap.add_argument('--no-token', action='store_true',
+                    help='no access token: serve anyone who can reach the port (use only behind your own auth)')
     ap.add_argument('--open', action='store_true', help='open the page in a browser')
     ap.add_argument('--version', action='version', version=f'mtv {__version__}')
     ns = ap.parse_args(argv)
@@ -57,13 +62,14 @@ def main(argv=None):
             print(f'  {l.id:<20} {l.root}  UNAVAILABLE: {e}')
 
     local_only = cfg['host'] in ('127.0.0.1', '::1', 'localhost')
-    token = os.environ.get(cfg['token_env']) or None
+    env_token = os.environ.get(cfg['token_env']) or None
+    token = None if ns.no_token else env_token
     generated = False
-    if not token and not local_only:
+    if not token and not local_only and not ns.no_token:
         token = secrets.token_urlsafe(24)
         generated = True
     runner = Runner(cfg['tenkm'], cfg['state_dir'])
-    app = App(cfg, loops, runner, token)
+    app = App(cfg, loops, runner, token, open_access=ns.no_token)
     st = app.actions_state()
     try:
         httpd = serve(app, cfg['host'], cfg['port'])
@@ -71,11 +77,16 @@ def main(argv=None):
         sys.exit(f'mtv: can\'t listen on {cfg["host"]}:{cfg["port"]}: {e}')
     url = f'http://{"127.0.0.1" if cfg["host"] in ("0.0.0.0", "::") else cfg["host"]}:{cfg["port"]}/'
     print(f'mtv {__version__}  {url}  ({"actions on" if st["enabled"] else st["reason"]})')
-    if generated:
+    if ns.no_token:
+        print('  no token (--no-token): anyone who can reach this port can use mtv'
+              + (', including its actions' if st['enabled'] else ''))
+        if env_token:
+            print(f'  ${cfg["token_env"]} is set but ignored because of --no-token')
+    elif generated:
         print(f'  token (this run only; set ${cfg["token_env"]} to keep one): {token}')
         print(f'  open: {url}?token={token}')
     elif token and not local_only:
-        print(f'  token from ${cfg["token_env"]}; open {url}?token=<token> once to sign in')
+        print(f'  token: from ${cfg["token_env"]} (not shown); open {url}?token=<token> once to sign in')
     sys.stdout.flush()
     if ns.open:
         webbrowser.open(url + (f'?token={token}' if generated else ''))
