@@ -4,8 +4,8 @@ A web console for [10km](https://github.com/pingdynasty/10km) loops: escalations
 cycle, sessions, repositories, history, cost and metrics, with a small set of operator actions.
 
 mtv watches loops whose files it can read: a local folder, or a volume shared with the loop's
-container. Python 3.9+, standard library only. The page bundles its chart library (Apache
-ECharts) and works offline.
+container. Requires Python 3.9+, standard library only. The page bundles its chart library 
+(Apache ECharts) and works offline.
 
 ## Run it
 
@@ -34,7 +34,7 @@ Or put the loops in a settings file, `~/.config/mtv/config.json` (or `$MTV_CONFI
 | `host`, `port` | `127.0.0.1`, `8710` | Where to listen. |
 | `allow_actions` | `false` | Enable the buttons that change a loop. |
 | `operator` | `$USER` | Name recorded with each action, and appended to escalation answers. |
-| `token_env` | `MTV_TOKEN` | Environment variable holding the access token for non-local requests. |
+| `token_env` | `MTV_TOKEN` | Environment variable holding the access token for non-local requests. Generated and printed at startup if unset. |
 | `state_dir` | `~/.local/state/mtv` | Where mtv keeps its action log (`actions.jsonl`). |
 
 ## Actions
@@ -51,9 +51,11 @@ both. `tenkm` must not be inside a loop; mtv refuses to start if it is.
 ## Security
 
 - mtv listens on 127.0.0.1 by default and serves requests from this machine without a token.
-- Anything else needs the token from `$MTV_TOKEN` (or `token_env`): `Authorization: Bearer …`,
-  or open the page once with `?token=…`, which sets a cookie. With no token set, only local
-  requests are served.
+- On any other address, requests need a token: `Authorization: Bearer …`, or open the page once
+  with `?token=…`, which sets a cookie. The token comes from `$MTV_TOKEN` (or `token_env`). If
+  none is set, mtv generates one at startup and prints it with a login link, so
+  `docker logs <container>` shows it. A generated token lasts for that run only; set
+  `$MTV_TOKEN` to keep the same one across restarts.
 - Action requests from another origin are refused.
 - For HTTPS, put mtv behind a reverse proxy (for example Caddy or nginx).
 
@@ -65,9 +67,11 @@ neither mtv's token nor network access to it.
 ```sh
 docker build -t mtv .
 docker run -d --name myloop-mtv -v myloop-home:/home/monkey:rw \
-  -e MTV_TOKEN=$(openssl rand -hex 16) -p 127.0.0.1:8710:8710 \
-  mtv /home/monkey/loop --host 0.0.0.0
+  -p 127.0.0.1:8710:8710 mtv /home/monkey/loop --host 0.0.0.0
+docker logs myloop-mtv      # shows the token and a login link
 ```
+
+Pass `-e MTV_TOKEN=…` to use a fixed token instead.
 
 SQLite in WAL mode needs write access to `.10km/` even for reading (for its `-shm` file), so run
 mtv with the loop's user ID (1000 in the 10km image) or group, and mount the volume read-write.

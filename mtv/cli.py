@@ -5,10 +5,13 @@
 
 Loop roots given here are added to those in the settings file.
 The token for non-local access comes from the environment variable named by
-"token_env" (default MTV_TOKEN); it is never read from a loop's files.
+"token_env" (default MTV_TOKEN); it is never read from a loop's files. When
+mtv listens on a non-local address and no token is set, it generates one for
+this run and prints a login link, so `docker logs` shows it.
 """
 import argparse
 import os
+import secrets
 import sys
 import webbrowser
 
@@ -53,7 +56,12 @@ def main(argv=None):
         except LoopUnavailable as e:
             print(f'  {l.id:<20} {l.root}  UNAVAILABLE: {e}')
 
+    local_only = cfg['host'] in ('127.0.0.1', '::1', 'localhost')
     token = os.environ.get(cfg['token_env']) or None
+    generated = False
+    if not token and not local_only:
+        token = secrets.token_urlsafe(24)
+        generated = True
     runner = Runner(cfg['tenkm'], cfg['state_dir'])
     app = App(cfg, loops, runner, token)
     st = app.actions_state()
@@ -63,10 +71,14 @@ def main(argv=None):
         sys.exit(f'mtv: can\'t listen on {cfg["host"]}:{cfg["port"]}: {e}')
     url = f'http://{"127.0.0.1" if cfg["host"] in ("0.0.0.0", "::") else cfg["host"]}:{cfg["port"]}/'
     print(f'mtv {__version__}  {url}  ({"actions on" if st["enabled"] else st["reason"]})')
-    if cfg['host'] not in ('127.0.0.1', '::1', 'localhost') and not token:
-        print(f'  note: no ${cfg["token_env"]} set, so only requests from this machine are served')
+    if generated:
+        print(f'  token (this run only; set ${cfg["token_env"]} to keep one): {token}')
+        print(f'  open: {url}?token={token}')
+    elif token and not local_only:
+        print(f'  token from ${cfg["token_env"]}; open {url}?token=<token> once to sign in')
+    sys.stdout.flush()
     if ns.open:
-        webbrowser.open(url)
+        webbrowser.open(url + (f'?token={token}' if generated else ''))
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

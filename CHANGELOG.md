@@ -10,5 +10,5 @@ First release as mtv (previously the 10km console).
 - Cost and metrics per month, day, hour or cycle; Kiro credits shown beside dollars; sessions
   timeline from the last hour to project start.
 - Actions through mtv's own 10km checkout, with an action log.
-- Token for non-local access; settings in JSON.
+- Token for non-local access, generated and printed at startup when $MTV_TOKEN isn't set; settings in JSON.
 - Charts with Apache ECharts, bundled for offline use (replaces Highcharts).
