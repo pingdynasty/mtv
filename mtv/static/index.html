@@ -111,7 +111,7 @@ body[data-theme="Forest"]{--page-ink:#141a17;--page-ink2:#1a221e;--page-ink3:#24
 .it:focus-visible,tr.r:focus-visible,.lrow:focus-visible{outline:2px solid var(--page-lime);outline-offset:-2px}
 #loopsw select{margin:0 16px 12px;width:calc(100% - 32px);font-family:var(--page-sans);font-size:13px;padding:6px;background:var(--page-ink);color:var(--page-bone);border:1px solid var(--page-line)}
 .oesc{margin:0 0 18px;padding:10px 14px;border:1px solid var(--page-line)}.oesc h2{margin-bottom:6px}
-.tlc{display:flex;gap:10px 18px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.rng{position:relative;height:30px;background:var(--page-ink2);border:1px solid var(--page-line);border-radius:3px;cursor:pointer;touch-action:none;user-select:none;margin:4px 6px 2px}.rng canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.rsel{position:absolute;top:-1px;bottom:-1px;min-width:14px;box-sizing:border-box;background:color-mix(in srgb,var(--page-lime) 16%,transparent);border:1px solid var(--page-lime);border-radius:3px;cursor:grab}.rng.drag .rsel{cursor:grabbing}.rh{position:absolute;top:3px;bottom:3px;width:8px;background:var(--page-lime);border-radius:2px;cursor:ew-resize}.rl{left:-5px}.rr{right:-5px}.rsel:focus-visible,.rh:focus-visible{outline:2px solid var(--page-bone);outline-offset:1px}.rax{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:10px;margin:0 6px 10px}.rz{font-family:var(--page-sans)}.lnk{background:none;border:0;padding:0 3px;font:inherit;font-size:11px;color:var(--page-dim);cursor:pointer}.lnk:hover{color:var(--page-bone)}.lnk.on{color:var(--page-bone);font-weight:600;text-decoration:underline}
+.tlc{display:flex;gap:10px 18px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.rng{position:relative;height:30px;background:var(--page-ink2);border:1px solid var(--page-line);border-radius:3px;cursor:pointer;touch-action:none;user-select:none;margin:4px 6px 2px}.rng canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.rsel{position:absolute;top:-1px;bottom:-1px;min-width:14px;box-sizing:border-box;background:color-mix(in srgb,var(--page-lime) 16%,transparent);border:1px solid var(--page-lime);border-radius:3px;cursor:grab}.rng.drag .rsel{cursor:grabbing}.rh{position:absolute;top:3px;bottom:3px;width:8px;background:var(--page-lime);border-radius:2px;cursor:ew-resize}.rl{left:-5px}.rr{right:-5px}.rsel:focus-visible,.rh:focus-visible{outline:2px solid var(--page-bone);outline-offset:1px}.rax{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:10px;margin:0 6px 10px}.lnk{background:none;border:0;padding:0 3px;font:inherit;font-size:11px;color:var(--page-dim);cursor:pointer}.lnk:hover{color:var(--page-bone)}.lnk.on{color:var(--page-bone);font-weight:600;text-decoration:underline}
 </style></head><body>
 <div class="app"><aside class="side"><div class="brand">mtv<span id="lname"></span></div><div id="loopsw"></div>
 <button class="launch" onclick="go('launch')">+ launch session</button><div id="tree"></div><div class="live" id="live">connecting…</div></aside>
@@ -149,7 +149,7 @@ async function api(p,body){if(p.startsWith('/api/'))p=A(p.slice(4));const r=awai
 /* Live state: small, polled with an ETag. Detail: fetched per view, cached, refreshed when live changes. */
 let ETAG='';const C={};let GEN=0;
 function need(key,url){const e=C[key];if(!e||e.gen!==GEN&&!e.busy){const ent=C[key]=Object.assign(e||{},{busy:true});
-  api(url).then(d=>{const same=ent.data!==undefined&&JSON.stringify(d)===JSON.stringify(ent.data);ent.data=d;ent.gen=GEN;ent.busy=false;if(!same&&viewKeys().includes(key)){const y=scrollY;ANIM=ANIM&&!ent.shown;render();scrollTo(0,y)}ent.shown=true}).catch(()=>{ent.busy=false})}
+  api(url).then(d=>{const same=ent.data!==undefined&&JSON.stringify(d)===JSON.stringify(ent.data);ent.data=d;ent.gen=GEN;ent.busy=false;if(!same&&viewKeys().includes(key)){const y=scrollY;ANIM=ANIM&&!ent.shown;if(key.includes('|tl:')&&view==='metrics'&&$('#sess'))renderSess();else render();scrollTo(0,y)}ent.shown=true}).catch(()=>{ent.busy=false})}
  return C[key]&&C[key].data}
 let VK=[];const viewKeys=()=>VK;
 let LOOPS=null;
@@ -185,6 +185,7 @@ function tree(){const c=curC(),L=S.loop,e=openEsc(),N=S.counts;const ss=[...S.se
  sec('hist','History','',it(`Cycles · ${N.cycles}`,'cycles',null)+it(`Issues · ${N.issues}`,'issues',null),0,view==='cycles'||view==='issues')+
  '<div class="navsep">'+it('Settings','settings',null,null,'top')+'</div>'}
 function go(v,a=null,fromHash){if(!fromHash){const h=hashOf(v,a);if(location.hash!==h)history.pushState(null,'',h)}if(v==='status')STATUS_OUT=null;if(v==='issues'&&a==='backlog'){IF={type:'backlog',status:'open',op:'all',q:'',off:0};a=null}ANIM=true;view=v;arg=a;if(!S)return;tree();render();window.scrollTo(0,0)}
+function renderSess(){const el=$('#sess');if(view!=='metrics'||!el)return render();const keep=VK.filter(k=>!k.includes('|tl:'));VK=keep;el.innerHTML=sessBlock();timeChart();initRange()}
 function render(){const keep={};document.querySelectorAll('#main textarea[id]').forEach(t=>keep[t.id]=t.value);const fq=document.activeElement&&document.activeElement.id==='q'?document.activeElement.selectionStart:null;
  const m=$('#main');m.dataset.v=view;VK=[];m.innerHTML=(V[view]||V.dash)(arg);
  if(view==='metrics'){charts();timeChart();initRange()}if(view==='launch')lc();if(view==='session')loadLog(arg);if(view==='cycle')cycleChart(arg);
@@ -193,6 +194,12 @@ function hashOf(v,a){return v==='dash'&&a==null?'#/':'#/'+v+(a!=null&&a!=='x'?'/
 function fromHash(){const m=location.hash.match(/^#\/([a-z]+)(?:\/(.+))?$/);if(!m)return ['dash',null];return [m[1],m[2]?decodeURIComponent(m[2]):null]}
 addEventListener('popstate',()=>{const [v,a]=fromHash();go(v,a,true)});
 addEventListener('keydown',e=>{const t=e.target;if((e.key==='Enter'||e.key===' ')&&t.matches&&t.matches('.it,tr.r,.lrow[role=link]')){e.preventDefault();t.click()}});
+function sessBlock(){return `${(()=>{get('tl:all','/api/timeline');const lo=Math.floor(rngLo()),hi=Math.ceil(rngHi());
+  return `<div class="tlc"><h2 style="margin:0;border:0;padding:0">SESSIONS · <span id="twt">${esc(twTitle())}</span></h2>${TU!=null||TSP!=null?'<button class="b" style="padding:3px 8px" onclick="winLatest()">latest</button>':''}</div>
+  <div class="rng" id="rng" data-lo="${lo}" data-hi="${hi}" title="Drag the ends to resize, the middle to move; click the track to jump"><canvas id="rngc"></canvas><div class="rsel" id="rsel" tabindex="0" role="slider" aria-label="Move the window (arrow keys)"><span class="rh rl" id="rhl" tabindex="0" role="slider" aria-label="Window start (arrow keys)"></span><span class="rh rr" id="rhr" tabindex="0" role="slider" aria-label="Window end (arrow keys)"></span></div></div>
+  <div class="rax mono dim"><span>${fmtT(lo*1000)}</span><span>${tuLabel(hi)}</span></div>`})()}
+ ${(()=>{const R=get('tl:'+twKey(),'/api/timeline?from='+Math.floor(twFrom())+'&to='+Math.ceil(tuCur()));if(!R)return LOADING;if(R.error||!R.rows)return '<div class="dim">The server doesn\'t provide session timelines yet: restart it to pick up the new version.</div>';if(!R.rows.length)return `<div class="dim">No sessions in this window.${twLast()?' Drag it, click the track where the activity is, or press <b>latest</b>.':''}</div>`;
+  const byRole=R.rows.length>24;return `<div id="chTime" style="height:${byRole?60+44*new Set(R.rows.map(r=>r.role)).size:Math.max(160,60+28*R.rows.length)}px"></div><div class="cap">${byRole?R.total+' sessions, one row per role. Drag to zoom. ':''}Click a bar to open the session. Times from loop.db sessions and usage.jsonl.</div>`})()}`}
 const LOADING='<div class="dim" style="padding:24px 0">Loading…</div>';
 function get(key,url){key=LOOP+'|'+key;VK.push(key);return need(key,url)}
 const fsm=(st,cur)=>{const k=st.indexOf(cur);return `<div class="fsm">${st.map((s,j)=>`<span class="${j===k?'now':j<k?'past':''}">${s}</span>`).join('')}</div>`};
@@ -227,12 +234,7 @@ metrics(){const M=get('m:'+MB,'/api/metrics?by='+MB);const N=S.counts;
  ${M?'':LOADING}<div class="g"><div class="c s7"><h2>TASKS PER ${MB.toUpperCase()}</h2><div id="chTasks" style="height:260px"></div><div class="cap">${MB==='cycle'?'Click a column to open the cycle. ':'By when each task was curated (or finished). '}${M&&M.keys.length>120?'Drag across the chart to zoom. ':''}Source: loop.db tasks</div></div>
  <div class="c s5"><h2>COST BY ROLE${N.credits?' · bars in $':''}</h2><div id="chRole" style="height:260px"></div><div class="cap">Source: .10km/usage.jsonl</div></div></div>
  <div class="g"><div class="c s12"><h2>COST PER ${MB.toUpperCase()}</h2><div id="chCost" style="height:260px"></div><div class="cap">Source: .10km/usage.jsonl</div></div></div>
- <div class="g"><div class="c s12">${(()=>{get('tl:all','/api/timeline');const lo=Math.floor(rngLo()),hi=Math.ceil(rngHi());
-  return `<div class="tlc"><h2 style="margin:0;border:0;padding:0">SESSIONS · <span id="twt">${esc(twTitle())}</span></h2>${TU!=null||TSP!=null?'<button class="b" style="padding:3px 8px" onclick="winLatest()">latest</button>':''}</div>
-  <div class="rng" id="rng" data-lo="${lo}" data-hi="${hi}" title="Drag the ends to resize, the middle to move; click the track to jump"><canvas id="rngc"></canvas><div class="rsel" id="rsel" tabindex="0" role="slider" aria-label="Move the window (arrow keys)"><span class="rh rl" id="rhl" tabindex="0" role="slider" aria-label="Window start (arrow keys)"></span><span class="rh rr" id="rhr" tabindex="0" role="slider" aria-label="Window end (arrow keys)"></span></div></div>
-  <div class="rax mono dim"><span>${fmtT(lo*1000)}</span><span class="rz">track ${TZS.map(([z,l],i)=>`<button class="lnk ${i===tzCur()?'on':''}" onclick="setTZ(${i})" ${z&&z<(tuCur()-tfCur())*1.5?'disabled style="opacity:.35"':''}>${l}</button>`).join(' ')}</span><span>${tuLabel(hi)}</span></div>`})()}
- ${(()=>{const R=get('tl:'+twKey(),'/api/timeline?from='+Math.floor(twFrom())+'&to='+Math.ceil(tuCur()));if(!R)return LOADING;if(R.error||!R.rows)return '<div class="dim">The server doesn\'t provide session timelines yet: restart it to pick up the new version.</div>';if(!R.rows.length)return `<div class="dim">No sessions in this window.${twLast()?' Drag it, click the track where the activity is, or press <b>latest</b>.':''}</div>`;
-  const byRole=R.rows.length>24;return `<div id="chTime" style="height:${byRole?60+44*new Set(R.rows.map(r=>r.role)).size:Math.max(160,60+28*R.rows.length)}px"></div><div class="cap">${byRole?R.total+' sessions, one row per role. Drag to zoom. ':''}Click a bar to open the session. Times from loop.db sessions and usage.jsonl.</div>`})()}</div></div>
+ <div class="g"><div class="c s12" id="sess">${sessBlock()}</div></div>
  <button class="b" onclick="act('metrics',{}).then(r=>r.out&&showOut('10km metrics',r.out))">run 10km metrics</button>`},
 issues(){const f=IF;const qs=new URLSearchParams({type:f.type,status:f.status,q:f.q,offset:f.off,limit:50});if(f.op==='to')qs.set('assignee_role','operator');if(f.op==='from')qs.set('assigner_role','operator');const R=get('iss:'+qs,'/api/issues?'+qs);
  const fb=(k,v)=>`<button class="b ${f[k]===v?'on':''}" onclick="IF.${k}='${v}';IF.off=0;render()">${v}</button>`;
@@ -331,7 +333,7 @@ function tzCur(){if(TZ!=null)return TZ;const all=rngNow()-rngFirst(),w=(TSP||TDE
 function rngSpan(){const all=rngNow()-rngFirst(),z=TZS[tzCur()][0]||all;return Math.min(all,Math.max(z,(tuCur()-tfCur())*1.5))}
 function rngHi(){const sp=rngSpan(),now=rngNow();if(sp>=now-rngFirst())return now;const c=(tfCur()+tuCur())/2;return Math.min(now,Math.max(rngFirst()+sp,c+sp/2))}
 function rngLo(){return rngHi()-rngSpan()}
-function setTZ(v){TZ=v;render()}
+function setTZ(v){TZ=v;renderSess()}
 function tuDef(){const now=rngNow(),t=twLast();if(!t)return now;return now-t<60?now:Math.min(now,t+5*60)}
 function tuCur(){return TU==='now'?rngNow():TU!=null?TU:tuDef()}
 function tfCur(){return Math.max(rngFirst(),tuCur()-(TSP||TDEF))}
@@ -340,8 +342,8 @@ function durLabel(s){const m=Math.round(s/60);if(m<120)return m+' min';const h=m
 function tuLabel(t=tuCur()){return rngNow()-t<90?'now':fmtT(t*1000)}
 function twTitle(f=tfCur(),u=tuCur()){return `${fmtT(f*1000)} – ${tuLabel(u)} · ${durLabel(u-f)}`}
 function twKey(){return Math.round(tfCur()/60)+':'+Math.round(tuCur()/60)}
-function setWin(f,u){ANIM=true;if(TZ==null)TZ=tzCur();TSP=Math.max(TMIN,u-f);TU=u>=rngNow()-60?'now':u;render()}  /* keep the track's scale while adjusting */
-function winLatest(){ANIM=true;TU=null;TSP=null;TZ=null;render()}
+function setWin(f,u){ANIM=true;if(TZ==null)TZ=tzCur();TSP=Math.max(TMIN,u-f);TU=u>=rngNow()-60?'now':u;renderSess()}  /* keep the track's scale while adjusting */
+function winLatest(){ANIM=true;TU=null;TSP=null;TZ=null;renderSess()}
 function initRange(){const el=$('#rng');if(!el)return;const lo=+el.dataset.lo,hi=+el.dataset.hi,W=hi-lo,sel=$('#rsel');let f=tfCur(),u=tuCur();
  const pos=()=>{const pw=el.clientWidth||1,mid=((f+u)/2-lo)/W*pw,ww=Math.max(28,(u-f)/W*pw);sel.style.left=Math.min(pw-ww,Math.max(0,mid-ww/2))+'px';sel.style.width=ww+'px';$('#twt').textContent=twTitle(f,u)};pos();
  const tOf=x=>{const r=el.getBoundingClientRect();return lo+Math.min(Math.max(x-r.left,0),r.width)/r.width*W};
@@ -383,8 +385,8 @@ function charts(){if(!window.echarts||!$('#chTasks'))return;const M=C[LOOP+'|m:'
     markLine:{silent:true,symbol:'none',lineStyle:{color:o.dm,type:'dashed',width:1},label:{formatter:`avg ${avg.toFixed(1)} accepted per ${unit}`,position:'insideEndTop',color:o.dm,fontSize:10},data:[{yAxis:+avg.toFixed(2)}]}}]}));
  t.on('click',open_);
  const pc=Bk.map(b=>+b.cost.toFixed(2));let run=0;const cum=pc.map(v=>+(run+=v).toFixed(2));const mx=pc.indexOf(Math.max(...pc));const hasCr=Bk.some(b=>b.credits);
- const c=ec('chCost');c.setOption(Object.assign(base(o),{grid:big?grid:{left:8,right:16,top:hasCr?34:24,bottom:8,containLabel:true},tooltip:Object.assign(base(o).tooltip,tip),dataZoom:zoom,
-  legend:{show:hasCr,top:0,right:0,textStyle:{color:o.dm,fontSize:11},itemWidth:10,itemHeight:8},
+ const c=ec('chCost');c.setOption(Object.assign(base(o),{grid:{left:8,right:16,top:hasCr?44:24,bottom:big?30:8,containLabel:true},tooltip:Object.assign(base(o).tooltip,tip),dataZoom:zoom,
+  legend:{show:hasCr,top:0,left:'center',textStyle:{color:o.dm,fontSize:11},itemWidth:10,itemHeight:8,itemGap:16},
   xAxis:axisX(o,{type:'category',data:cats}),
   yAxis:[axisY(o,{type:'value',axisLabel:{color:o.dm,fontFamily:o.mono,fontSize:10,formatter:'${value}'}}),
    axisY(o,{type:'value',min:0,position:'right',splitLine:{show:false},axisLabel:{color:o.dm,fontFamily:o.mono,fontSize:10,formatter:'${value}'}}),
@@ -392,7 +394,7 @@ function charts(){if(!window.echarts||!$('#chTasks'))return;const M=C[LOOP+'|m:'
   series:[{name:'Per '+unit+' ($)',type:'bar',data:pc.map((v,i)=>i===mx?{value:v,itemStyle:{color:o.acc},label:{show:true,position:'top',formatter:'peak ${c}',color:o.tx,fontSize:10}}:v),itemStyle:{color:o.bar,borderRadius:rad},barWidth:bw},
    ...(hasCr?[{name:'Kiro credits',type:'bar',yAxisIndex:2,data:Bk.map(b=>+b.credits.toFixed(1)),itemStyle:{color:o.am,borderRadius:rad},barWidth:bw}]:[]),
    {name:'Running total ($)',type:'line',yAxisIndex:1,data:cum,symbol:'none',lineStyle:{color:o.tx,width:2},itemStyle:{color:o.tx},
-    endLabel:{show:true,formatter:p=>'$'+Math.round(p.value)+' total',color:o.tx,fontSize:10}}]}));
+    endLabel:{show:true,formatter:p=>'$'+Math.round(p.value)+' total',color:o.tx,fontSize:10,align:'right',verticalAlign:'bottom',offset:[-2,-6]}}]}));
  c.on('click',p=>{if(p.seriesType==='bar')open_(p)});
  const roles=M.roles;if(!roles.length){const el=$('#chRole');if(el)el.innerHTML='<div class="dim" style="padding:20px 0">No usage recorded yet.</div>';return timeChart(o)}const r=ec('chRole');r.setOption(Object.assign(base(o),{grid:{left:8,right:roles.some(x=>x[2])?130:70,top:8,bottom:8,containLabel:true},
   tooltip:Object.assign(base(o).tooltip,{trigger:'item',formatter:p=>`<b>${roles[p.dataIndex][0]}</b><br/>${money(roles[p.dataIndex][1],roles[p.dataIndex][2])}`}),
