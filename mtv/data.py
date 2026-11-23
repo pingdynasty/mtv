@@ -249,6 +249,13 @@ class Loop:
         ends = [e for e in ends if e]
         return max(ends) if ends else None
 
+    def first_session_at(self, sessions):
+        """When the loop's first session started, from usage.jsonl and loop.db (None if none)."""
+        starts = [r['t'] - (r['duration_ms'] or 0) / 1000 for r in self.usage.rows if r['t']]
+        starts += [ts(s['created_at']) for s in sessions if s.get('created_at')]
+        starts = [t for t in starts if t]
+        return min(starts) if starts else None
+
     def first_at(self):
         """When the project started: the first cycle's planned_at, else the first usage record."""
         t = ts((self.q1('select min(planned_at) t from cycles') or {}).get('t'))
@@ -296,6 +303,7 @@ class Loop:
             },
             'last_session_at': self.last_session_at(sessions),
             'first_at': self.first_at(),
+            'first_session_at': self.first_session_at(sessions),
             'repos': self.repos(),
         }
 

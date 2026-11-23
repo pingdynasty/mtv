@@ -157,7 +157,7 @@ async function loops(){const r=await fetch('/api/loops',{cache:'no-store'});if(r
  LOOPS=(await r.json()).loops;const want=LS.get('mtv-loop');LOOP=LOOP||(LOOPS.find(l=>l.id===want)||LOOPS[0]||{}).id;switcher()}
 function switcher(){const el=$('#loopsw');if(!el||!LOOPS)return;if(LOOPS.length<2){el.innerHTML='';return}
  el.innerHTML=`<select id="loopsel" aria-label="Loop" onchange="switchLoop(this.value)">${LOOPS.map(l=>`<option value="${esc(l.id)}" ${l.id===LOOP?'selected':''}>${esc(l.name)}${l.escalations?' · '+l.escalations+' waiting':''}${l.error?' · unavailable':''}</option>`).join('')}</select>`}
-function switchLoop(id){if(id===LOOP)return;LOOP=id;LS.set('mtv-loop',id);switcher();ETAG='';S=null;STATUS_OUT=null;TU=null;TSP=null;TZ=null;history.pushState(null,'','#/');view='dash';arg=null;$('#main').innerHTML=LOADING;load('init')}
+function switchLoop(id){if(id===LOOP)return;LOOP=id;LS.set('mtv-loop',id);switcher();ETAG='';S=null;STATUS_OUT=null;TU=null;TSP=null;history.pushState(null,'','#/');view='dash';arg=null;$('#main').innerHTML=LOADING;load('init')}
 function unavailable(msg){$('#tree').innerHTML='';$('#lname').textContent=' / '+(LOOPS.find(l=>l.id===LOOP)||{}).name;
  $('#main').innerHTML=`<div class="crumb">LOOP UNAVAILABLE</div><h1>mtv can't read this loop.</h1><div class="warn">${esc(msg)}</div>`;$('#live').textContent='unavailable'}
 async function load(force){try{if(!LOOPS)await loops();if(!LOOP){$('#main').innerHTML='<h1>No loops configured.</h1>';return}
@@ -199,7 +199,7 @@ function sessBlock(){return `${(()=>{get('tl:all','/api/timeline');const lo=Math
   <div class="rng" id="rng" data-lo="${lo}" data-hi="${hi}" title="Drag the ends to resize, the middle to move; click the track to jump"><canvas id="rngc"></canvas><div class="rsel" id="rsel" tabindex="0" role="slider" aria-label="Move the window (arrow keys)"><span class="rh rl" id="rhl" tabindex="0" role="slider" aria-label="Window start (arrow keys)"></span><span class="rh rr" id="rhr" tabindex="0" role="slider" aria-label="Window end (arrow keys)"></span></div></div>
   <div class="rax mono dim"><span>${fmtT(lo*1000)}</span><span>${tuLabel(hi)}</span></div>`})()}
  ${(()=>{const R=get('tl:'+twKey(),'/api/timeline?from='+Math.floor(twFrom())+'&to='+Math.ceil(tuCur()));if(!R)return LOADING;if(R.error||!R.rows)return '<div class="dim">The server doesn\'t provide session timelines yet: restart it to pick up the new version.</div>';if(!R.rows.length)return `<div class="dim">No sessions in this window.${twLast()?' Drag it, click the track where the activity is, or press <b>latest</b>.':''}</div>`;
-  const byRole=R.rows.length>24;return `<div id="chTime" style="height:${byRole?60+44*new Set(R.rows.map(r=>r.role)).size:Math.max(160,60+28*R.rows.length)}px"></div><div class="cap">${byRole?R.total+' sessions, one row per role. Drag to zoom. ':''}Click a bar to open the session. Times from loop.db sessions and usage.jsonl.</div>`})()}`}
+  const byRole=R.rows.length>24;return `<div id="chTime" style="height:${byRole?60+44*new Set(R.rows.map(r=>r.role)).size:Math.max(160,60+28*R.rows.length)}px"></div><div class="cap">${byRole?R.total+' sessions, one row per role. ':''}Click a bar to open the session. Times from loop.db sessions and usage.jsonl.</div>`})()}`}
 const LOADING='<div class="dim" style="padding:24px 0">Loading…</div>';
 function get(key,url){key=LOOP+'|'+key;VK.push(key);return need(key,url)}
 const fsm=(st,cur)=>{const k=st.indexOf(cur);return `<div class="fsm">${st.map((s,j)=>`<span class="${j===k?'now':j<k?'past':''}">${s}</span>`).join('')}</div>`};
@@ -327,13 +327,8 @@ function axisY(o,extra){return Object.assign({axisLine:{show:false},axisTick:{sh
 let TU=null,TSP=null;const TMIN=3600,TDEF=3*3600;
 function twLast(){if(!S)return null;if(S.sessions.some(x=>x.status==='active'))return Date.now()/1000;return S.last_session_at||null}
 function rngNow(){return Date.now()/1000}
-function rngFirst(){const now=rngNow();return Math.min((S&&S.first_at)||now-30*86400,now-TDEF)}
-const TZS=[[0,'all'],[30*86400,'30 days'],[7*86400,'week'],[2*86400,'2 days'],[86400,'day'],[12*3600,'12 h']];let TZ=null;
-function tzCur(){if(TZ!=null)return TZ;const all=rngNow()-rngFirst(),w=(TSP||TDEF)*16;let i=0;for(let k=1;k<TZS.length;k++)if(TZS[k][0]>=w&&TZS[k][0]<all)i=k;return i}  /* default: the narrowest track at least 16x the window */
-function rngSpan(){const all=rngNow()-rngFirst(),z=TZS[tzCur()][0]||all;return Math.min(all,Math.max(z,(tuCur()-tfCur())*1.5))}
-function rngHi(){const sp=rngSpan(),now=rngNow();if(sp>=now-rngFirst())return now;const c=(tfCur()+tuCur())/2;return Math.min(now,Math.max(rngFirst()+sp,c+sp/2))}
-function rngLo(){return rngHi()-rngSpan()}
-function setTZ(v){TZ=v;renderSess()}
+function rngFirst(){const now=rngNow(),f=S&&(S.first_session_at||S.first_at);return Math.min(f||now-TDEF,now-TDEF)}  /* the track starts at the loop's first session */
+function rngLo(){return rngFirst()}function rngHi(){return rngNow()}
 function tuDef(){const now=rngNow(),t=twLast();if(!t)return now;return now-t<60?now:Math.min(now,t+5*60)}
 function tuCur(){return TU==='now'?rngNow():TU!=null?TU:tuDef()}
 function tfCur(){return Math.max(rngFirst(),tuCur()-(TSP||TDEF))}
@@ -342,8 +337,8 @@ function durLabel(s){const m=Math.round(s/60);if(m<120)return m+' min';const h=m
 function tuLabel(t=tuCur()){return rngNow()-t<90?'now':fmtT(t*1000)}
 function twTitle(f=tfCur(),u=tuCur()){return `${fmtT(f*1000)} – ${tuLabel(u)} · ${durLabel(u-f)}`}
 function twKey(){return Math.round(tfCur()/60)+':'+Math.round(tuCur()/60)}
-function setWin(f,u){ANIM=true;if(TZ==null)TZ=tzCur();TSP=Math.max(TMIN,u-f);TU=u>=rngNow()-60?'now':u;renderSess()}  /* keep the track's scale while adjusting */
-function winLatest(){ANIM=true;TU=null;TSP=null;TZ=null;renderSess()}
+function setWin(f,u){ANIM=true;TSP=Math.max(TMIN,u-f);TU=u>=rngNow()-60?'now':u;renderSess()}  /* keep the track's scale while adjusting */
+function winLatest(){ANIM=true;TU=null;TSP=null;renderSess()}
 function initRange(){const el=$('#rng');if(!el)return;const lo=+el.dataset.lo,hi=+el.dataset.hi,W=hi-lo,sel=$('#rsel');let f=tfCur(),u=tuCur();
  const pos=()=>{const pw=el.clientWidth||1,mid=((f+u)/2-lo)/W*pw,ww=Math.max(28,(u-f)/W*pw);sel.style.left=Math.min(pw-ww,Math.max(0,mid-ww/2))+'px';sel.style.width=ww+'px';$('#twt').textContent=twTitle(f,u)};pos();
  const tOf=x=>{const r=el.getBoundingClientRect();return lo+Math.min(Math.max(x-r.left,0),r.width)/r.width*W};
@@ -406,9 +401,9 @@ function timeChart(o){drawDensity();const T=C[LOOP+'|tl:'+twKey()]&&C[LOOP+'|tl:
  const roles=['planner','worker','curator','auditor','operator'].filter(r=>R.some(x=>x.role===r));const cats=byRole?roles:R.map(r=>r.n);
  const now=Date.now(),end=tuCur()*1000,lo=tfCur()*1000,hi=end+Math.max(30e3,(end-lo)*.01);
  const data=R.map((r,i)=>({value:[byRole?roles.indexOf(r.role):i,r.s*1000,Math.max(r.e*1000,r.s*1000+1),i],r,itemStyle:{color:r.active?o.acc:byRole&&r.role==='worker'?alpha(o.acc,.55):o.bar}}));
- const ch=ec('chTime');ch.setOption(Object.assign(base(o),{grid:{left:8,right:16,top:16,bottom:30,containLabel:true},
+ const ch=ec('chTime');ch.setOption(Object.assign(base(o),{grid:{left:8,right:16,top:16,bottom:8,containLabel:true},
   tooltip:Object.assign(base(o).tooltip,{trigger:'item',formatter(p){const r=p.data.r;return `<b>${esc(r.n)}</b><br/>${r.role}${r.cycle!=null?' · cycle '+r.cycle:''}${r.harness?' · '+esc(r.harness):''}<br/>${fmtT(r.s*1000)} – ${r.active?'now':fmtT(r.e*1000,'hm')} (${Math.max(0,Math.round((r.e-r.s)/60))}m)`}}),
-  dataZoom:[{type:'inside',xAxisIndex:0,filterMode:'weakFilter'},{type:'slider',xAxisIndex:0,height:14,bottom:0,filterMode:'weakFilter',borderColor:o.ln,fillerColor:alpha(o.acc,.15),textStyle:{color:o.dm},showDataShadow:false,labelFormatter:v=>fmtT(v)}],
+  dataZoom:[{type:'inside',xAxisIndex:0,filterMode:'weakFilter',zoomOnMouseWheel:false,moveOnMouseMove:false}],
   xAxis:axisX(o,{type:'time',min:lo,max:hi,splitLine:{show:false},axisLabel:{color:o.dm,fontFamily:o.mono,fontSize:10,hideOverlap:true}}),
   yAxis:{type:'category',inverse:true,data:cats,axisLine:{show:false},axisTick:{show:false},axisLabel:{color:o.tx,fontFamily:byRole?o.sans:o.mono,fontSize:11}},
   series:[{type:'custom',encode:{x:[1,2],y:0},data,clip:true,

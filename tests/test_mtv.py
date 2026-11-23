@@ -51,6 +51,8 @@ class TestData(Tmp):
         self.assertTrue(L['last_session_at'])
         self.assertLess(L['last_session_at'], time.time() - 3600)   # data time, never 'now'
         self.assertLess(L['first_at'], L['last_session_at'])
+        self.assertLessEqual(L['first_at'], L['first_session_at'])
+        self.assertLess(L['first_session_at'], L['last_session_at'])
         self.assertNotIn('instructions', L['cycle_tasks'][0])   # live state stays small
         self.assertLess(len(json.dumps(L, default=str)), 20000)
 
