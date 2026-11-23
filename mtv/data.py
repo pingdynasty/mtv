@@ -140,10 +140,13 @@ class Loop:
     def connect(self):
         if not os.path.exists(self.db):
             raise LoopUnavailable(f'No loop database at {self.db}.')
+        con = None
         try:
             con = sqlite3.connect(f'file:{self.db}?mode=ro', uri=True, timeout=5)
             con.execute('select 1 from loop')
         except sqlite3.OperationalError as e:
+            if con is not None:
+                con.close()
             # WAL mode: a reader must create the -shm file beside the database.
             if 'unable to open' in str(e) or 'readonly' in str(e):
                 if not os.access(os.path.dirname(self.db), os.W_OK):
@@ -236,8 +239,12 @@ class Loop:
         return rows
 
     def last_session_at(self, sessions):
-        if any(s['status'] == 'active' for s in sessions):
-            return time.time()
+        """When a session last ended, from loop.db and usage.jsonl (None if never).
+
+        Deliberately not "now" for an active session: the live state must not
+        change on its own, or its ETag never matches. The page checks
+        sessions for active ones itself.
+        """
         ends = [r['t'] for r in self.usage.rows if r['t']] + [ts(s['updated_at']) for s in sessions]
         ends = [e for e in ends if e]
         return max(ends) if ends else None

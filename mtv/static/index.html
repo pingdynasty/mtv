@@ -316,7 +316,7 @@ function base(o){return {animation:ANIM,animationDuration:500,textStyle:{fontFam
 function axisX(o,extra){return Object.assign({axisLine:{lineStyle:{color:o.ln}},axisTick:{show:false},axisLabel:{color:o.dm,fontFamily:o.mono,fontSize:10},splitLine:{show:false}},extra||{})}
 function axisY(o,extra){return Object.assign({axisLine:{show:false},axisTick:{show:false},axisLabel:{color:o.dm,fontFamily:o.mono,fontSize:10},splitLine:{lineStyle:{color:o.l3}}},extra||{})}
 const TWS=[[3600,'Last hour'],[3*3600,'Last 3 hours'],[6*3600,'Last 6 hours'],[12*3600,'Last 12 hours'],[86400,'Last day'],[2*86400,'Last 2 days'],[7*86400,'Last week'],[14*86400,'Last 2 weeks'],[30*86400,'Last 30 days'],[0,'Since project start']];
-let TW=null;function twDefault(){const t=S&&S.last_session_at;if(!t)return TWS.length-1;const age=Date.now()/1000-t;const i=TWS.findIndex(w=>w[0]&&w[0]>=age+60);return i<0?TWS.length-1:i}
+let TW=null;function twDefault(){if(S&&S.sessions.some(x=>x.status==='active'))return 0;const t=S&&S.last_session_at;if(!t)return TWS.length-1;const age=Date.now()/1000-t;const i=TWS.findIndex(w=>w[0]&&w[0]>=age+60);return i<0?TWS.length-1:i}
 function twCur(){return TW==null?twDefault():TW}function twLabel(i=twCur()){return TWS[i][1]}
 function twFrom(i=twCur()){return TWS[i][0]?Date.now()/1000-TWS[i][0]:0}function setTW(v){ANIM=true;TW=v;render()}
 let MB=(v=>['month','day','hour','cycle'].includes(v)?v:'cycle')(LS.get('mtv-mb'));function setMB(v){ANIM=true;MB=v;LS.set('mtv-mb',v);render()}

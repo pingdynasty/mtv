@@ -48,7 +48,8 @@ class TestData(Tmp):
         self.assertAlmostEqual(L['counts']['cost'], 3 * (2.5 + 5.0 + 0.5))
         self.assertEqual(L['counts']['credits'], 0)
         self.assertEqual(L['dispatch']['result'], 'ok')
-        self.assertTrue(L['last_session_at'])                # an active session: now
+        self.assertTrue(L['last_session_at'])
+        self.assertLess(L['last_session_at'], time.time() - 3600)   # data time, never 'now'
         self.assertNotIn('instructions', L['cycle_tasks'][0])   # live state stays small
         self.assertLess(len(json.dumps(L, default=str)), 20000)
 
@@ -172,7 +173,10 @@ class TestData(Tmp):
         bad = os.path.join(self.tmp, 'bad', '.10km')
         os.makedirs(bad)
         import sqlite3
-        sqlite3.connect(os.path.join(bad, 'loop.db')).execute('create table x (a)').connection.commit()
+        c = sqlite3.connect(os.path.join(bad, 'loop.db'))
+        c.execute('create table x (a)')
+        c.commit()
+        c.close()
         with self.assertRaises(LoopUnavailable) as e:
             Loop(os.path.dirname(bad)).live()
         self.assertIn('10km loop', str(e.exception))
@@ -287,7 +291,8 @@ class TestServer(Tmp):
             with urllib.request.urlopen(r, timeout=10) as resp:
                 return resp.status, dict(resp.headers), resp.read()
         except urllib.error.HTTPError as e:
-            return e.code, dict(e.headers), e.read()
+            with e:
+                return e.code, dict(e.headers), e.read()
 
     def test_pages_and_api(self):
         self.start()
@@ -319,6 +324,8 @@ class TestServer(Tmp):
         d = json.loads(body)
         self.assertEqual(d['actions']['enabled'], False)
         self.assertEqual([l['id'] for l in d['loops']], ['basic', 'mixed', 'gone'])
+        self.assertEqual(self.req('/api/basic/live', headers={'If-None-Match': h['ETag']})[0], 304)
+        self.app.forget(self.app.loops['basic'])               # rebuilt from unchanged data: same ETag
         self.assertEqual(self.req('/api/basic/live', headers={'If-None-Match': h['ETag']})[0], 304)
 
     def test_unavailable_loop(self):
