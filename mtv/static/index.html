@@ -111,6 +111,7 @@ body[data-theme="Forest"]{--page-ink:#141a17;--page-ink2:#1a221e;--page-ink3:#24
 .it:focus-visible,tr.r:focus-visible,.lrow:focus-visible{outline:2px solid var(--page-lime);outline-offset:-2px}
 #loopsw select{margin:0 16px 12px;width:calc(100% - 32px);font-family:var(--page-sans);font-size:13px;padding:6px;background:var(--page-ink);color:var(--page-bone);border:1px solid var(--page-line)}
 .oesc{margin:0 0 18px;padding:10px 14px;border:1px solid var(--page-line)}.oesc h2{margin-bottom:6px}
+.tlc{display:flex;gap:10px 18px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.tlr{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--page-dim);flex:1;min-width:220px;max-width:460px;margin:0}.tlr input{flex:1;padding:0}.tlr .mono{min-width:96px}
 </style></head><body>
 <div class="app"><aside class="side"><div class="brand">mtv<span id="lname"></span></div><div id="loopsw"></div>
 <button class="launch" onclick="go('launch')">+ launch session</button><div id="tree"></div><div class="live" id="live">connecting…</div></aside>
@@ -156,7 +157,7 @@ async function loops(){const r=await fetch('/api/loops',{cache:'no-store'});if(r
  LOOPS=(await r.json()).loops;const want=LS.get('mtv-loop');LOOP=LOOP||(LOOPS.find(l=>l.id===want)||LOOPS[0]||{}).id;switcher()}
 function switcher(){const el=$('#loopsw');if(!el||!LOOPS)return;if(LOOPS.length<2){el.innerHTML='';return}
  el.innerHTML=`<select id="loopsel" aria-label="Loop" onchange="switchLoop(this.value)">${LOOPS.map(l=>`<option value="${esc(l.id)}" ${l.id===LOOP?'selected':''}>${esc(l.name)}${l.escalations?' · '+l.escalations+' waiting':''}${l.error?' · unavailable':''}</option>`).join('')}</select>`}
-function switchLoop(id){if(id===LOOP)return;LOOP=id;LS.set('mtv-loop',id);switcher();ETAG='';S=null;STATUS_OUT=null;TW=null;history.pushState(null,'','#/');view='dash';arg=null;$('#main').innerHTML=LOADING;load('init')}
+function switchLoop(id){if(id===LOOP)return;LOOP=id;LS.set('mtv-loop',id);switcher();ETAG='';S=null;STATUS_OUT=null;TW=null;TU=null;history.pushState(null,'','#/');view='dash';arg=null;$('#main').innerHTML=LOADING;load('init')}
 function unavailable(msg){$('#tree').innerHTML='';$('#lname').textContent=' / '+(LOOPS.find(l=>l.id===LOOP)||{}).name;
  $('#main').innerHTML=`<div class="crumb">LOOP UNAVAILABLE</div><h1>mtv can't read this loop.</h1><div class="warn">${esc(msg)}</div>`;$('#live').textContent='unavailable'}
 async function load(force){try{if(!LOOPS)await loops();if(!LOOP){$('#main').innerHTML='<h1>No loops configured.</h1>';return}
@@ -226,9 +227,12 @@ metrics(){const M=get('m:'+MB,'/api/metrics?by='+MB);const N=S.counts;
  ${M?'':LOADING}<div class="g"><div class="c s7"><h2>TASKS PER ${MB.toUpperCase()}</h2><div id="chTasks" style="height:260px"></div><div class="cap">${MB==='cycle'?'Click a column to open the cycle. ':'By when each task was curated (or finished). '}${M&&M.keys.length>120?'Drag across the chart to zoom. ':''}Source: loop.db tasks</div></div>
  <div class="c s5"><h2>COST BY ROLE${N.credits?' · bars in $':''}</h2><div id="chRole" style="height:260px"></div><div class="cap">Source: .10km/usage.jsonl</div></div></div>
  <div class="g"><div class="c s12"><h2>COST PER ${MB.toUpperCase()}</h2><div id="chCost" style="height:260px"></div><div class="cap">Source: .10km/usage.jsonl</div></div></div>
- <div class="g"><div class="c s12"><div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><h2 style="margin:0;border:0;padding:0">SESSIONS</h2>
- <input type="range" id="tw" min="0" max="${TWS.length-1}" step="1" value="${twCur()}" style="flex:1;min-width:180px;max-width:420px;padding:0" oninput="$('#twl').textContent=twLabel(+this.value)" onchange="setTW(+this.value)"><span class="mono dim" id="twl">${twLabel()}</span></div>
- ${(()=>{const R=get('tl:'+twCur(),'/api/timeline?from='+Math.floor(twFrom())+'&to='+Math.ceil(Date.now()/1000));if(!R)return LOADING;if(R.error||!R.rows)return '<div class="dim">The server doesn\'t provide session timelines yet: restart it to pick up the new version.</div>';if(!R.rows.length)return `<div class="dim">No sessions ran in ${twLabel().toLowerCase()}.</div>`;
+ <div class="g"><div class="c s12">${(()=>{const now=Date.now()/1000,lo=Math.floor(S.first_at||now-30*86400),hi=Math.ceil(now),sp=TWS[twCur()][0];
+  return `<div class="tlc"><h2 style="margin:0;border:0;padding:0">SESSIONS · <span id="twt">${esc(twTitle())}</span></h2>
+  <label class="tlr"><span>span</span><input type="range" id="tw" min="0" max="${TWS.length-1}" step="1" value="${twCur()}" oninput="$('#twl').textContent=twLabel(+this.value)" onchange="setTW(+this.value)"><span class="mono dim" id="twl">${twLabel()}</span></label>
+  <label class="tlr" ${sp?'':'style="opacity:.4"'}><span>until</span><input type="range" id="tu" min="${lo}" max="${hi}" step="60" value="${Math.round(tuCur())}" ${sp?'':'disabled'} oninput="$('#tul').textContent=tuLabel(+this.value)" onchange="setTU(+this.value,${lo},${hi})"><span class="mono dim" id="tul">${tuLabel()}</span></label>
+  ${TU!=null||TW!=null?`<button class="b" style="padding:3px 8px" onclick="TW=null;TU=null;ANIM=true;render()">latest</button>`:''}</div>`})()}
+ ${(()=>{const R=get('tl:'+twKey(),'/api/timeline?from='+Math.floor(twFrom())+'&to='+Math.ceil(tuCur()));if(!R)return LOADING;if(R.error||!R.rows)return '<div class="dim">The server doesn\'t provide session timelines yet: restart it to pick up the new version.</div>';if(!R.rows.length)return `<div class="dim">No sessions in ${esc(twTitle())}.${twLast()?' Press <b>latest</b>, or move <i>until</i>, to find some.':''}</div>`;
   const byRole=R.rows.length>24;return `<div id="chTime" style="height:${byRole?60+44*new Set(R.rows.map(r=>r.role)).size:Math.max(160,60+28*R.rows.length)}px"></div><div class="cap">${byRole?R.total+' sessions, one row per role. Drag to zoom. ':''}Click a bar to open the session. Times from loop.db sessions and usage.jsonl.</div>`})()}</div></div>
  <button class="b" onclick="act('metrics',{}).then(r=>r.out&&showOut('10km metrics',r.out))">run 10km metrics</button>`},
 issues(){const f=IF;const qs=new URLSearchParams({type:f.type,status:f.status,q:f.q,offset:f.off,limit:50});if(f.op==='to')qs.set('assignee_role','operator');if(f.op==='from')qs.set('assigner_role','operator');const R=get('iss:'+qs,'/api/issues?'+qs);
@@ -316,10 +320,19 @@ function base(o){return {animation:ANIM,animationDuration:500,textStyle:{fontFam
  tooltip:{backgroundColor:o.bg,borderColor:o.ln,borderWidth:1,textStyle:{color:o.tx,fontSize:12},extraCssText:'border-radius:3px;box-shadow:none'}}}
 function axisX(o,extra){return Object.assign({axisLine:{lineStyle:{color:o.ln}},axisTick:{show:false},axisLabel:{color:o.dm,fontFamily:o.mono,fontSize:10},splitLine:{show:false}},extra||{})}
 function axisY(o,extra){return Object.assign({axisLine:{show:false},axisTick:{show:false},axisLabel:{color:o.dm,fontFamily:o.mono,fontSize:10},splitLine:{lineStyle:{color:o.l3}}},extra||{})}
-const TWS=[[3600,'Last hour'],[3*3600,'Last 3 hours'],[6*3600,'Last 6 hours'],[12*3600,'Last 12 hours'],[86400,'Last day'],[2*86400,'Last 2 days'],[7*86400,'Last week'],[14*86400,'Last 2 weeks'],[30*86400,'Last 30 days'],[0,'Since project start']];
-let TW=null;function twDefault(){if(S&&S.sessions.some(x=>x.status==='active'))return 0;const t=S&&S.last_session_at;if(!t)return TWS.length-1;const age=Date.now()/1000-t;const i=TWS.findIndex(w=>w[0]&&w[0]>=age+60);return i<0?TWS.length-1:i}
-function twCur(){return TW==null?twDefault():TW}function twLabel(i=twCur()){return TWS[i][1]}
-function twFrom(i=twCur()){return TWS[i][0]?Date.now()/1000-TWS[i][0]:0}function setTW(v){ANIM=true;TW=v;render()}
+const TWS=[[3600,'1 hour'],[3*3600,'3 hours'],[6*3600,'6 hours'],[12*3600,'12 hours'],[86400,'1 day'],[2*86400,'2 days'],[7*86400,'1 week'],[14*86400,'2 weeks'],[30*86400,'30 days'],[0,'all']];
+/* Sessions window = span (TW) ending at "until" (TU, epoch s; null = latest). Default: the most recent 3 hours with sessions. */
+let TW=null,TU=null;
+function twLast(){if(!S)return null;if(S.sessions.some(x=>x.status==='active'))return Date.now()/1000;return S.last_session_at||null}
+function twCur(){return TW==null?1:TW}
+function tuCur(){if(TU!=null)return TU;const now=Date.now()/1000,t=twLast();if(!t)return now;return now-t<60?now:Math.min(now,t+5*60)}
+function twLabel(i=twCur()){return TWS[i][1]}
+function twFrom(){const sp=TWS[twCur()][0];return sp?tuCur()-sp:0}
+function tuLabel(t=tuCur()){return Date.now()/1000-t<90?'now':fmtT(t*1000)}
+function twTitle(){return TWS[twCur()][0]?`${twLabel()} until ${tuLabel()}`:'since project start'}
+function twKey(){return twCur()+':'+Math.round(tuCur()/60)}
+function setTW(v){ANIM=true;TW=v;render()}
+function setTU(v,lo,hi){ANIM=true;TU=v>=hi-60?null:Math.max(lo,v);if(TW==null)TW=twCur();render()}
 let MB=(v=>['month','day','hour','cycle'].includes(v)?v:'cycle')(LS.get('mtv-mb'));function setMB(v){ANIM=true;MB=v;LS.set('mtv-mb',v);render()}
 function charts(){if(!window.echarts||!$('#chTasks'))return;const M=C[LOOP+'|m:'+MB]&&C[LOOP+'|m:'+MB].data;if(!M)return;const o=hc();
  const unit=M.by,dtx=unit!=='cycle',K=M.keys,Bk=M.buckets,n=K.length,big=n>120;
@@ -356,9 +369,9 @@ function charts(){if(!window.echarts||!$('#chTasks'))return;const M=C[LOOP+'|m:'
   series:[{type:'bar',data:roles.map((x,i)=>({value:x[1],itemStyle:{color:i===0?o.acc:o.bar}})),barWidth:'60%',itemStyle:{borderRadius:[0,2,2,0]},
    label:{show:true,position:'right',formatter:p=>money(roles[p.dataIndex][1],roles[p.dataIndex][2]),color:o.tx,fontFamily:o.mono,fontSize:11}}]}));
  timeChart(o)}
-function timeChart(o){const T=C[LOOP+'|tl:'+twCur()]&&C[LOOP+'|tl:'+twCur()].data;if(!window.echarts||!T||!T.rows||!T.rows.length||!$('#chTime'))return;o=o||hc();const R=T.rows,byRole=R.length>24;
+function timeChart(o){const T=C[LOOP+'|tl:'+twKey()]&&C[LOOP+'|tl:'+twKey()].data;if(!window.echarts||!T||!T.rows||!T.rows.length||!$('#chTime'))return;o=o||hc();const R=T.rows,byRole=R.length>24;
  const roles=['planner','worker','curator','auditor','operator'].filter(r=>R.some(x=>x.role===r));const cats=byRole?roles:R.map(r=>r.n);
- const now=Date.now(),lo=TWS[twCur()][0]?now-TWS[twCur()][0]*1000:T.start*1000,hi=now+Math.max(60e3,(now-lo)*.02);
+ const now=Date.now(),end=tuCur()*1000,lo=TWS[twCur()][0]?end-TWS[twCur()][0]*1000:T.start*1000,hi=end+Math.max(60e3,(end-lo)*.02);
  const data=R.map((r,i)=>({value:[byRole?roles.indexOf(r.role):i,r.s*1000,Math.max(r.e*1000,r.s*1000+1),i],r,itemStyle:{color:r.active?o.acc:byRole&&r.role==='worker'?alpha(o.acc,.55):o.bar}}));
  const ch=ec('chTime');ch.setOption(Object.assign(base(o),{grid:{left:8,right:16,top:16,bottom:30,containLabel:true},
   tooltip:Object.assign(base(o).tooltip,{trigger:'item',formatter(p){const r=p.data.r;return `<b>${esc(r.n)}</b><br/>${r.role}${r.cycle!=null?' · cycle '+r.cycle:''}${r.harness?' · '+esc(r.harness):''}<br/>${fmtT(r.s*1000)} – ${r.active?'now':fmtT(r.e*1000,'hm')} (${Math.max(0,Math.round((r.e-r.s)/60))}m)`}}),
@@ -370,7 +383,7 @@ function timeChart(o){const T=C[LOOP+'|tl:'+twCur()]&&C[LOOP+'|tl:'+twCur()].dat
     const sh=echarts.graphic.clipRectByRect({x:a[0],y:a[1]-h/2,width:Math.max(2,b[0]-a[0]),height:h},{x:params.coordSys.x,y:params.coordSys.y,width:params.coordSys.width,height:params.coordSys.height});
     if(!sh)return;const r=data[params.dataIndex].r;const lab=!byRole&&sh.width>60?{text:`${r.role} · ${Math.round((r.e-r.s)/60)}m${r.active?' · active':''}`,fill:'#fff',fontSize:10,fontFamily:o.sans}:null;
     return {type:'rect',shape:Object.assign(sh,{r:byRole?1:2}),style:Object.assign(api.style(),lab?{text:lab.text,textFill:lab.fill,fontSize:10}:{}),textConfig:lab?{position:'inside'}:undefined}},
-   markLine:{silent:true,symbol:'none',lineStyle:{color:o.am,width:1,type:'solid'},label:{formatter:'now',color:o.am,fontSize:10,position:'end'},data:[{xAxis:now}]}}]}));
+   markLine:{silent:true,symbol:'none',lineStyle:{color:o.am,width:1,type:'solid'},label:{formatter:'now',color:o.am,fontSize:10,position:'start',distance:4},data:now<=hi?[{xAxis:now}]:[]}}]}));
  ch.on('click',p=>{if(p.data&&p.data.r)go('session',p.data.r.n)})}
 function cycleChart(id){const c=C[LOOP+'|c:'+id]&&C[LOOP+'|c:'+id].data;if(!window.echarts||!$('#chCyc')||!c)return;const o=hc();const us=[...c.usage].sort((a,b)=>(b.total_cost_usd||0)-(a.total_cost_usd||0)||(b.credits||0)-(a.credits||0));
  const ch=ec('chCyc');ch.setOption(Object.assign(base(o),{grid:{left:8,right:120,top:8,bottom:8,containLabel:true},

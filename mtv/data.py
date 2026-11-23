@@ -249,6 +249,14 @@ class Loop:
         ends = [e for e in ends if e]
         return max(ends) if ends else None
 
+    def first_at(self):
+        """When the project started: the first cycle's planned_at, else the first usage record."""
+        t = ts((self.q1('select min(planned_at) t from cycles') or {}).get('t'))
+        if t:
+            return t
+        u = [r['t'] for r in self.usage.rows if r['t']]
+        return min(u) if u else None
+
     def live(self):
         """What the always-visible parts of the page need; small at any loop size."""
         self.usage.refresh()
@@ -287,6 +295,7 @@ class Loop:
                 'cycle_cost': round(sum(r['total_cost_usd'] or 0 for r in U if r['cycle'] == cur), 4),
             },
             'last_session_at': self.last_session_at(sessions),
+            'first_at': self.first_at(),
             'repos': self.repos(),
         }
 
