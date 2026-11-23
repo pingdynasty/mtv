@@ -322,7 +322,7 @@ class Loop:
     def issues_page(self, a):
         off, lim = self._page(a)
         where, args = [], []
-        for k in ('type', 'status', 'severity', 'assignee_role'):
+        for k in ('type', 'status', 'severity', 'assignee_role', 'assigner_role'):
             if a.get(k) and a[k] != 'all':
                 where.append(f'{k} = ?')
                 args.append(a[k])

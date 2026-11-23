@@ -42,7 +42,7 @@ class TestData(Tmp):
         self.assertEqual(L['loop']['current_cycle'], 3)
         self.assertEqual(L['cycle']['id'], 3)
         self.assertEqual([t['shortname'] for t in L['cycle_tasks']], ['t3a', 't3b'])
-        self.assertEqual(len(L['escalations']), 1)
+        self.assertEqual(len(L['escalations']), 2)          # all open; the page shows only the operator's as 'needs you'
         self.assertEqual(L['escalations'][0]['severity'], 'blocking')
         self.assertEqual(L['counts']['backlog_open'], 1)
         self.assertAlmostEqual(L['counts']['cost'], 3 * (2.5 + 5.0 + 0.5))
@@ -126,7 +126,9 @@ class TestData(Tmp):
         b = self.loop()
         self.assertEqual(b.issues_page({'type': 'backlog', 'status': 'open'})['total'], 1)
         self.assertEqual(b.issues_page({'q': 'license'})['total'], 1)
-        self.assertEqual(b.issues_page({'type': 'all', 'status': 'all'})['total'], 3)
+        self.assertEqual(b.issues_page({'type': 'all', 'status': 'all'})['total'], 4)
+        self.assertEqual(b.issues_page({'assignee_role': 'operator'})['total'], 1)
+        self.assertEqual(b.issues_page({'assigner_role': 'operator'})['total'], 2)
 
     def test_details(self):
         lp = self.loop()

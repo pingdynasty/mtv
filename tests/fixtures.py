@@ -78,6 +78,8 @@ def make_loop(root, kind='basic'):
             f.write(json.dumps({'type': 'result', 'result': 'Done.', 'total_cost_usd': 1.25, 'num_turns': 9}) + '\n')
         x("insert into issues values ('e1-0000', 'escalation', 'ESC1: Pick a license', 'Which license?', 'cycle2-curator-bbbb', "
           "'curator', 'operator', 'blocking', null, 'open', null, '2026-11-19T12:00:00Z', null, null, null)")
+        x("insert into issues values ('e2-0000', 'escalation', 'Schedule reblocking next', 'Planner, please.', null, "
+          "'operator', 'planner', 'high', null, 'open', null, '2026-11-19T14:00:00Z', null, null, null)")
         x("insert into issues values ('b1-0000', 'backlog', 'Make the encoders prettier', 'They are ugly.', null, "
           "'operator', 'planner', 'low', null, 'open', null, '2026-11-19T13:00:00Z', null, null, null)")
         x("insert into issues values ('b2-0000', 'backlog', 'Old item', null, null, 'worker', 'planner', 'high', null, "
