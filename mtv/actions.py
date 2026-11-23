@@ -34,6 +34,8 @@ def build(cmd, p):
         return (['10km', 'pause'] + (['--now'] if p.get('now') else []) + ([s('reason')] if s('reason') else [])), True
     if cmd == 'resume':
         return ['10km', 'resume'], True
+    if cmd == 'start':
+        return ['10km', 'start'], True
     if cmd == 'stop':
         return ['10km', 'stop'] + (['--now'] if p.get('now') else []), True
     if cmd == 'dispatch':

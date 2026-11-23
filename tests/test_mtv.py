@@ -228,6 +228,7 @@ class TestConfig(Tmp):
 class TestActions(Tmp):
     def test_allow_list(self):
         self.assertEqual(build('resume', {}), (['10km', 'resume'], True))
+        self.assertEqual(build('start', {}), (['10km', 'start'], True))
         self.assertEqual(build('status', {}), (['10km', 'status'], False))
         self.assertEqual(build('pause', {'now': 1, 'reason': 'x'}), (['10km', 'pause', '--now', 'x'], True))
         self.assertEqual(build('rm -rf', {}), (None, None))
