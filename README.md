@@ -11,7 +11,7 @@ container. Requires Python 3.9+, standard library only. The page bundles its cha
 
     python3 -m mtv ~/devel/myloop                       # read-only, http://127.0.0.1:8710/
     python3 -m mtv ~/devel/a ~/devel/b --open           # several loops, with a switcher
-    python3 -m mtv --tenkm ~/10km --allow-actions ~/devel/myloop
+    python3 -m mtv --allow-actions ~/devel/myloop
 
 Or put the loops in a settings file, `~/.config/mtv/config.json` (or `$MTV_CONFIG`, or `--config`):
 
@@ -21,7 +21,6 @@ Or put the loops in a settings file, `~/.config/mtv/config.json` (or `$MTV_CONFI
     {"name": "bruckert", "root": "~/devel/bruckert-10km"},
     {"name": "pdlang",   "root": "~/devel/pdlang-10km"}
   ],
-  "tenkm": "~/10km",
   "allow_actions": false,
   "operator": "martin"
 }
@@ -30,7 +29,7 @@ Or put the loops in a settings file, `~/.config/mtv/config.json` (or `$MTV_CONFI
 | Setting | Default | Meaning |
 |---|---|---|
 | `loops` | `[]` | Loop roots (the folder holding `.10km/`), with optional names. Command-line roots are added. |
-| `tenkm` | none | A 10km checkout mtv runs `10km` and `msm` from. Without it, mtv is read-only. |
+| `tenkm` | none | Optional override: run every loop's `10km` and `msm` from this checkout instead of its own `central/loop`. |
 | `host`, `port` | `127.0.0.1`, `8710` | Where to listen. |
 | `allow_actions` | `false` | Enable the buttons that change a loop. |
 | `operator` | `$USER` | Name recorded with each action, and appended to escalation answers. |
@@ -39,14 +38,16 @@ Or put the loops in a settings file, `~/.config/mtv/config.json` (or `$MTV_CONFI
 
 ## Actions
 
-With `--allow-actions` and a `tenkm` checkout, the page can answer or resolve escalations, add
-backlog items, pause, resume, stop, dispatch, mark a session done, and start an operator session
-(without an agent). Each runs `10km` or `msm` from **mtv's own 10km checkout**, with `LOOP_ROOT`
-and `MSM_DB` set and `LOOP_SESSION` unset, so the commands' own checks apply (for example, resume
-is refused while a blocking escalation is open). Every action is logged with the operator's name.
+With `--allow-actions`, the page can answer or resolve escalations, add backlog items, stop, kill,
+start, resume, dispatch, mark a session done, and start an operator session. Each runs the
+loop's own live installation, `<root>/central/loop/bin/10km` or `msm`, with the loop's `host.env`
+sourced, as an operator's shell would. `LOOP_ROOT` and `MSM_DB` are set for the loop and
+`LOOP_SESSION` is unset, so the commands' own checks apply (for example, resume is refused while
+a blocking escalation is open). mtv's token is never passed to these commands. Every action is
+logged with the operator's name.
 
-mtv never runs a loop's `central/loop/bin` or sources its `host.env`: the loop's agents can change
-both. `tenkm` must not be inside a loop; mtv refuses to start if it is.
+mtv trusts a watched loop as much as it trusts itself: the loop's code runs with mtv's user and
+in mtv's environment. Run mtv inside the same sandbox as the loop, not outside it (see below).
 
 ## Security
 
@@ -62,23 +63,25 @@ both. `tenkm` must not be inside a loop; mtv refuses to start if it is.
 - Action requests from another origin are refused.
 - For HTTPS, put mtv behind a reverse proxy (for example Caddy or nginx).
 
-## As a sidecar
+## Where to run it
 
-Run mtv in its own container that mounts the loop's volume. The agents' container should hold
-neither mtv's token nor network access to it.
+Because mtv runs the loop's own code, it belongs in the loop's sandbox:
 
-```sh
-docker build -t mtv .
-docker run -d --name myloop-mtv -v myloop-home:/home/monkey:rw \
-  -p 127.0.0.1:8710:8710 mtv /home/monkey/loop --host 0.0.0.0
-docker logs myloop-mtv      # shows the token and a login link
-```
-
-Pass `-e MTV_TOKEN=…` to use a fixed token instead; it is then not printed.
+- **Same VM or host, same user as the loop:** the loop's code runs with exactly the constraints
+  the loop already has. This is the recommended setup. Note that anything running as that user,
+  including the loop's agents, can read mtv's environment (`/proc/<pid>/environ` on Linux), so
+  treat `$MTV_TOKEN` as readable by the loop.
+- **Inside the loop's container** (`docker exec -d myloop python3 -m mtv … --host 0.0.0.0` with
+  the port published to `127.0.0.1`): the same, plus the container's limits.
+- **A sidecar container** sharing the volume is *not* the same sandbox. Commands mtv runs
+  execute in the sidecar: its image, user, network and mounts, and its open port. Database-only
+  actions (answer, resolve, backlog, stop, resume) work there. Actions that launch or signal
+  agents (start, dispatch, kill, operator sessions with an agent) would run agents in the
+  sidecar, or fail to reach the loop's processes, so don't enable actions in a sidecar unless it
+  is built to the same constraints as the loop container. Read-only use is fine.
 
 SQLite in WAL mode needs write access to `.10km/` even for reading (for its `-shm` file), so run
-mtv with the loop's user ID (1000 in the 10km image) or group, and mount the volume read-write.
-For actions, mount or bake in a 10km checkout and pass `--tenkm` and `--allow-actions`.
+mtv as the loop's user (uid 1000 in the 10km image) or group.
 
 ## Development
 

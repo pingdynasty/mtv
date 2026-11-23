@@ -30,7 +30,7 @@ def main(argv=None):
     ap.add_argument('--config', help='settings file (default $MTV_CONFIG or ~/.config/mtv/config.json)')
     ap.add_argument('--host', help='address to listen on (default 127.0.0.1)')
     ap.add_argument('--port', type=int, help='port (default 8710)')
-    ap.add_argument('--tenkm', help='10km checkout to run 10km and msm from')
+    ap.add_argument('--tenkm', help="override: run 10km and msm from this checkout instead of each loop's central/loop")
     ap.add_argument('--allow-actions', action='store_true', default=None, help='enable buttons that change a loop')
     ap.add_argument('--operator', help='name recorded with actions')
     ap.add_argument('--no-token', action='store_true',
@@ -68,7 +68,7 @@ def main(argv=None):
     if not token and not local_only and not ns.no_token:
         token = secrets.token_urlsafe(24)
         generated = True
-    runner = Runner(cfg['tenkm'], cfg['state_dir'])
+    runner = Runner(cfg['tenkm'], cfg['state_dir'], token_env=cfg['token_env'])
     app = App(cfg, loops, runner, token, open_access=ns.no_token)
     st = app.actions_state()
     try:

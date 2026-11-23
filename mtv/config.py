@@ -16,9 +16,9 @@ Command-line loop roots are added to the file's loops. Example:
       "token_env": "MTV_TOKEN"
     }
 
-"tenkm" is a 10km checkout mtv runs `10km` and `msm` from. It must not be a
-loop's own central/loop, which the loop's agents can change. Without it,
-actions are unavailable (read-only).
+"tenkm" is optional: by default mtv runs each loop's own installation,
+<root>/central/loop/bin, with the loop's host.env sourced. Set it to run every
+loop's commands from one 10km checkout instead.
 """
 import json
 import os
@@ -88,7 +88,4 @@ def load(path=None, roots=(), overrides=None):
     cfg['tenkm'] = os.path.abspath(os.path.expanduser(cfg['tenkm'])) if cfg['tenkm'] else ''
     cfg['state_dir'] = os.path.abspath(os.path.expanduser(cfg['state_dir']))
     cfg['port'] = int(cfg['port'])
-    for l in loops:
-        if cfg['tenkm'] and os.path.realpath(cfg['tenkm']).startswith(os.path.realpath(l['root']) + os.sep):
-            raise ConfigError(f'"tenkm" is inside loop {l["name"]}: use a 10km checkout the loop\'s agents can\'t change')
     return cfg

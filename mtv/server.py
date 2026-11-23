@@ -42,10 +42,10 @@ class App:
         self._live = {}
         self._lock = threading.Lock()
 
-    def actions_state(self):
+    def actions_state(self, loop=None):
         if not self.allow:
             return {'enabled': False, 'reason': 'Read-only: start mtv with --allow-actions to enable actions.'}
-        ok, why = self.runner.available()
+        ok, why = self.runner.available(loop)
         return {'enabled': ok, 'reason': why}
 
     def live(self, loop):
@@ -56,7 +56,7 @@ class App:
             if c and c['sig'] == sig and time.time() - c['t'] < 15:
                 return c['body'], c['etag']
         d = loop.live()
-        d['actions'] = self.actions_state()
+        d['actions'] = self.actions_state(loop)
         d['loops'] = [{'id': i, 'name': self.loops[i].name} for i in self.order]
         d['version'] = __version__
         body = json.dumps(d, default=str, separators=(',', ':')).encode()
@@ -239,7 +239,7 @@ def make_handler(app):
             argv, writes = build(parts[4], p)
             if not argv:
                 return self.send(400, {'error': f'unknown command or missing argument: {parts[4]}'})
-            st = app.actions_state()
+            st = app.actions_state(loop)
             if writes and not st['enabled']:
                 return self.send(403, {'error': st['reason'], 'argv': argv})
             r = app.runner.run(loop, argv, who=app.operator, writes=writes)

@@ -214,12 +214,6 @@ class TestConfig(Tmp):
         with self.assertRaises(config.ConfigError):
             config.load(os.path.join(self.tmp, 'missing.json'))
 
-    def test_tenkm_inside_loop_refused(self):
-        root = os.path.join(self.tmp, 'L')
-        os.makedirs(os.path.join(root, 'central', 'loop'))
-        with self.assertRaises(config.ConfigError):
-            config.load(None, [root], {'tenkm': os.path.join(root, 'central', 'loop')})
-
     def test_duplicate_names(self):
         cfg = config.load(None, [os.path.join(self.tmp, 'a', 'x'), os.path.join(self.tmp, 'b', 'x')])
         self.assertEqual([l['id'] for l in cfg['loops']], ['x', 'x-2'])
@@ -270,10 +264,35 @@ class TestActions(Tmp):
         self.assertEqual((rec['operator'], rec['argv'], rec['code']), ('martin', ['10km', 'resume'], 0))
 
     def test_runner_unavailable(self):
-        self.assertFalse(Runner('', self.tmp).available()[0])
-        self.assertFalse(Runner(os.path.join(self.tmp, 'none'), self.tmp).available()[0])
-        res = Runner('', self.tmp).run(self.loop(), ['10km', 'status'])
+        lp = self.loop()                                         # fixture has no central/loop/bin
+        self.assertFalse(Runner('', self.tmp).available(lp)[0])
+        self.assertFalse(Runner(os.path.join(self.tmp, 'none'), self.tmp).available(lp)[0])
+        res = Runner('', self.tmp).run(lp, ['10km', 'status'])
         self.assertIsNone(res['code'])
+
+    def test_runner_uses_loops_own_install(self):
+        lp = self.loop()
+        b = os.path.join(lp.root, 'central', 'loop', 'bin')
+        os.makedirs(b)
+        for exe in ('10km', 'msm'):
+            p = os.path.join(b, exe)
+            with open(p, 'w') as f:
+                f.write('#!/bin/sh\necho "$0 $* host=$FROM_HOST_ENV root=$LOOP_ROOT session=${LOOP_SESSION:-none} '
+                        'token=${MTV_TOKEN:-none}"\n')
+            os.chmod(p, 0o755)
+        with open(os.path.join(lp.root, 'host.env'), 'w') as f:
+            f.write('export FROM_HOST_ENV=yes\nexport LOOP_ROOT=/elsewhere\nexport LOOP_SESSION=agent\n')
+        os.environ['MTV_TOKEN'] = 'secret'
+        try:
+            res = Runner('', os.path.join(self.tmp, 'state')).run(lp, ['10km', 'status'])
+        finally:
+            del os.environ['MTV_TOKEN']
+        self.assertEqual(res['code'], 0, res)
+        self.assertIn(os.path.join(b, '10km'), res['out'])              # the loop's own 10km
+        self.assertIn('host=yes', res['out'])                           # host.env sourced
+        self.assertIn(f'root={lp.root}', res['out'])                    # but LOOP_ROOT re-asserted
+        self.assertIn('session=none', res['out'])                       # and LOOP_SESSION unset
+        self.assertIn('token=none', res['out'])                         # mtv's token never passed on
 
 
 class TestServer(Tmp):
