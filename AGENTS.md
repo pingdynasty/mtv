@@ -3,7 +3,9 @@
 Guidance for agents working on mtv, the web console for [10km](https://github.com/pingdynasty/10km)
 loops. [README.md](README.md) describes what it does, its settings and its security model.
 
-- Python 3.9+, standard library only. The page (`mtv/static/`) bundles its libraries and works
+- Python 3.9+, standard library only, by default. These can be relaxed (a dependency, a newer
+  Python) when keeping to them costs more than it gives; say so in your report so the operator
+  is told, without stopping the loop. The page (`mtv/static/`) bundles its libraries and works
   offline; no CDNs.
 - Run `make test` before every commit. `make smoke` (a browser test) needs Playwright and is
   optional.
