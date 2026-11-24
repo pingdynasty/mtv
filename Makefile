@@ -1,7 +1,7 @@
 .PHONY: test smoke check build clean
 
 test:
-	python3 -m unittest discover -s tests -t . -v
+	python3 -m unittest discover -s tests -v
 
 smoke:
 	python3 tests/smoke_browser.py
