@@ -326,6 +326,8 @@ class TestServer(Tmp):
         self.assertIn(b'/static/vendor/echarts.min.js', body)
         self.assertNotIn(b'highcharts', body.lower())
         self.assertEqual(self.req('/static/vendor/echarts.min.js')[0], 200)
+        self.assertIn(b'/static/favicon.svg', body)
+        self.assertEqual(self.req('/static/favicon.svg')[0], 200)
         self.assertEqual(self.req('/static/../server.py')[0], 404)
         loops = json.loads(self.req('/api/loops')[2])['loops']
         self.assertEqual([l['id'] for l in loops], ['basic', 'mixed', 'gone'])

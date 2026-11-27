@@ -32,4 +32,4 @@ packages = ["mtv"]
 version = {attr = "mtv.__version__"}
 
 [tool.setuptools.package-data]
-mtv = ["static/*.html", "static/vendor/*"]
+mtv = ["static/*.html", "static/*.svg", "static/vendor/*"]

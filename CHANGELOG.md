@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Favicon: the monkey, as an SVG served from /static/favicon.svg.
+
 ## 0.1.0 (2026-11-23)
 
 First release as mtv (previously the 10km console).
